@@ -43,15 +43,21 @@ const HL = {
 
 };
 
-const priv = new Map();
-
 module.exports = function(five) {
   return (function() {
 
     class Huskylens extends eventEmitter {
+
+      #state = {
+        mode: HL.ALGORITHM.FACE_RECOGNITION,
+        isRunning: false,
+        interval: null,
+        blocks: 0,
+        learned: 0,
+        frame: 0
+      };
     
       constructor(opts) {
-        console.log(1);
         super();
 
         // Allow users to pass in a 2 or 3 element array for rx and tx pins
@@ -72,17 +78,6 @@ module.exports = function(five) {
           this, opts = five.Board.Options(opts)
         );
   
-        const state = {
-          mode: HL.ALGORITHM.FACE_RECOGNITION,
-          isRunning: false,
-          interval: null,
-          blocks: 0,
-          learned: 0,
-          frame: 0
-        };
-      
-        priv.set(this, state);
-  
         this.initialize(opts);
       }
 
@@ -91,13 +86,12 @@ module.exports = function(five) {
        */
       initialize(opts) {
 
-        const state = priv.get(this);
-        state.portId = opts.serialPort || opts.portId || opts.port || opts.bus;
+        this.#state.portId = opts.serialPort || opts.portId || opts.port || opts.bus;
         
         // firmata.js has a SERIAL_PORT_IDs.DEFAULT that is not 
         // necessary in other IO plugins so it won't always exist. 
-        if (typeof state.portId === "undefined" && this.io.SERIAL_PORT_IDs) {
-          state.portId = this.io.SERIAL_PORT_IDs.DEFAULT;
+        if (typeof this.#state.portId === "undefined" && this.io.SERIAL_PORT_IDs) {
+          this.#state.portId = this.io.SERIAL_PORT_IDs.DEFAULT;
         }
 
         // Set the pin modes
@@ -108,7 +102,7 @@ module.exports = function(five) {
         }, this);
 
         this.io.serialConfig({
-          portId: state.portId,
+          portId: this.#state.portId,
           baud: opts.baud || 9600,
           rxPin: this.pins.rx,
           txPin: this.pins.tx
@@ -118,16 +112,16 @@ module.exports = function(five) {
           console.error(err.message);
         });
 
-        state.freq = opts.freq || 1;
+        this.#state.freq = opts.freq || 1;
         
         this.listen();
 
         if (opts.mode) {
-          state.mode = typeof opts.mode === "string" ? HL.ALGORITHM[opts.mode] : opts.mode;
+          this.#state.mode = typeof opts.mode === "string" ? HL.ALGORITHM[opts.mode] : opts.mode;
         }
 
         this.once("ready", () => {
-          this.mode(state.mode);
+          this.mode(this.#state.mode);
           this.start();       
         });
         
@@ -137,11 +131,10 @@ module.exports = function(five) {
 
       listen() {
 
-        const state = priv.get(this);
         let command = [];
       
         // Start the read loop
-        this.io.serialRead(state.portId, data => {
+        this.io.serialRead(this.#state.portId, data => {
           
           command = command.concat(data);
   
@@ -174,62 +167,58 @@ module.exports = function(five) {
       }
 
       mode(mode) {
-        let state = priv.get(this);
         
         if (!mode) {
-          return HL.ALGORITHM.LOOKUP[state.mode[0]]
+          return HL.ALGORITHM.LOOKUP[this.#state.mode[0]]
         }
         if (typeof mode === "string" && HL.ALGORITHM[mode]) {
-          state.mode = HL.ALGORITHM[mode];
+          this.#state.mode = HL.ALGORITHM[mode];
         }
         if (Array.isArray(mode) && mode.length === 2) {
-          state.mode = mode;
+          this.#state.mode = mode;
         }
-        this.sendCommand(HL.COMMANDS.REQUEST_ALGORORITHM, state.mode);
+        this.sendCommand(HL.COMMANDS.REQUEST_ALGORORITHM, this.#state.mode);
       }
 
       freq(freq) {
-        let state = priv.get(this);
         
-        if (!freq) return state.freq;
+        if (!freq) return this.#state.freq;
   
         if (typeof freq === "number") {
-          state.freq = freq;
+          this.#state.freq = freq;
         }
-        if (state.isRunning) {
+        if (this.#state.isRunning) {
           this.stop();
           this.start();
         }
       }
 
       stop() {
-        let state = priv.get(this);
-        state.isRunning = false;
-        if (state.interval) {
-          clearInterval(state.interval);
+        
+        this.#state.isRunning = false;
+        if (this.#state.interval) {
+          clearInterval(this.#state.interval);
         }
       }
 
       start() {
-        let state = priv.get(this);
-        state.isRunning = true;
-        state.interval = setInterval(() => {
+        
+        this.#state.isRunning = true;
+        this.#state.interval = setInterval(() => {
           this.sendCommand(HL.COMMANDS.REQUEST);
-        }, 1000/state.freq);
+        }, 1000/this.#state.freq);
       }
 
       parseCommand(data) {
       
-        let state = priv.get(this);
-        
         const command = data[4];
         
         switch (command) {
           
           case HL.COMMANDS.RETURN_OK:
-            if (!state.isReady) {
+            if (!this.#state.isReady) {
               this.emit("ready");
-              state.isReady = true;
+              this.#state.isReady = true;
             } else {
               this.emit("okay");
             }
@@ -268,14 +257,13 @@ module.exports = function(five) {
 
       sendCommand(command, data) {
 
-        let state = priv.get(this);
         if (!Array.isArray(data)) data = [];
         command = [HL.HEADER, HL.HEADER2, HL.ADDRESS, data.length || 0x00, command].concat(data)
         if (data) command.concat(data);
         let checksum = command.reduce((sum, byte) => sum + byte) & 0xff;
   
         command.push(checksum);
-        this.io.serialWrite(state.portId, command);
+        this.io.serialWrite(this.#state.portId, command);
   
       }
 
@@ -283,4 +271,5 @@ module.exports = function(five) {
 
     return Huskylens;
   }());
+
 };
