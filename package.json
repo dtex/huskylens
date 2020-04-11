@@ -1,0 +1,30 @@
+{
+  "name": "huskylens",
+  "version": "0.0.1",
+  "description": "Johnny-Five plug in for the HuskyLens AI Vision Sensor",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dtex/huskylens.git"
+  },
+  "keywords": [
+    "huskylens",
+    "husky",
+    "lens",
+    "ai",
+    "vision",
+    "dfrobot"
+  ],
+  "author": "donovan@donovan.bz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dtex/huskylens/issues"
+  },
+  "homepage": "https://github.com/dtex/huskylens#readme",
+  "dependencies": {
+    "johnny-five": "^1.4.0"
+  }
+}
