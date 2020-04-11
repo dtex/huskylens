@@ -7,7 +7,7 @@ board.on("ready", () => {
 
   const lens = new Huskylens({
     pins: { rx:11, tx:10 },
-    mode: "OBJECT_RECOGNITION"
+    mode: "OBJECT_CLASSIFICATION"
   });
 
   lens.on("ready", () => {
