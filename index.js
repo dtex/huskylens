@@ -1,6 +1,5 @@
 const eventEmitter = require("events");
 
-
 const HL = {
   HEADER: 0x55,
   HEADER2: 0xaa,
@@ -39,8 +38,7 @@ const HL = {
       "TAG_RECOGNITION",
       "OBJECT_CLASSIFICATION"
     ]
-  },
-
+  }
 };
 
 module.exports = function(five) {
@@ -58,26 +56,18 @@ module.exports = function(five) {
       };
     
       constructor(opts) {
-        super();
 
         // Allow users to pass in a 2 or 3 element array for rx and tx pins
         if (Array.isArray(opts)) {
-          opts = {
-            pins: {
-              rx: opts[0],
-              tx: opts[1]
-            }
-          };
+          opts = { pins: { rx: opts[0], tx: opts[1] } };
         }
   
         if (typeof opts.pins === "undefined") {
           opts.pins = {};
         }
   
-        five.Board.Component.call(
-          this, opts = five.Board.Options(opts)
-        );
-  
+        super();
+        five.Board.Component.call( this, opts = five.Board.Options(opts) );
         this.initialize(opts);
       }
 
@@ -95,21 +85,17 @@ module.exports = function(five) {
         }
 
         // Set the pin modes
-        ["rx", "tx"].forEach(function(pin) {
+        ["rx", "tx"].forEach(pin => {
           if (this.pins[pin]) {
             this.io.pinMode(this.pins[pin], this.io.MODES.SERIAL);
           }
-        }, this);
+        });
 
         this.io.serialConfig({
           portId: this.#state.portId,
           baud: opts.baud || 9600,
           rxPin: this.pins.rx,
           txPin: this.pins.tx
-        });
-
-        this.on("error", (err) => {
-          console.error(err.message);
         });
 
         this.#state.freq = opts.freq || 1;
@@ -120,6 +106,10 @@ module.exports = function(five) {
           this.#state.mode = typeof opts.mode === "string" ? HL.ALGORITHM[opts.mode] : opts.mode;
         }
 
+        this.on("error", (err) => {
+          console.error(err.message);
+        });
+        
         this.once("ready", () => {
           this.mode(this.#state.mode);
           this.start();       
@@ -138,16 +128,26 @@ module.exports = function(five) {
           
           command = command.concat(data);
   
-          if (command[0] !== HL.HEADER) {
+          let offset = command.indexOf(HL.HEADER);
+          
+          if (offset === -1) {
             command = [];
             return;
           }
+
+          if (offset) command = command.slice(offset);
+
             // See if we have enough data to check
           if (command.length < 5) return;
           
           // if the command doesn't start with the correct three bytes, start over
           if (command[1] !== HL.HEADER2 || command[2] !== HL.ADDRESS) {
-            command = [];
+            offset = command.indexOf(HL.HEADER, 1);
+            if (offset === -1) {
+              command = [];
+              return;
+            }
+            command = command.slice(offset);
             return;
           }
   
@@ -238,6 +238,9 @@ module.exports = function(five) {
             let height = data[11] | (data[12] << 8);
             let id = data[13] | (data[14] << 8);
             this.emit("block", { x, y, width, height, id });
+            if (id > 0) {
+              this.emit(`block-${id}`, { x, y, width, height, id });
+            }
             break;
   
           case HL.COMMANDS.RETURN_ARROW:
@@ -247,6 +250,9 @@ module.exports = function(five) {
             let yTarget = data[11] | (data[12] << 8);
             let arrowID = data[13] | (data[14] << 8);
             this.emit("arrow", { xOrigin, yOrigin, xTarget, yTarget, id: arrowID });
+            if (arrowID > 0) {
+              this.emit("arrow-${arrowID}", { xOrigin, yOrigin, xTarget, yTarget, id: arrowID });
+            }
             break;
   
           default:
@@ -258,11 +264,13 @@ module.exports = function(five) {
       sendCommand(command, data) {
 
         if (!Array.isArray(data)) data = [];
+        
         command = [HL.HEADER, HL.HEADER2, HL.ADDRESS, data.length || 0x00, command].concat(data)
         if (data) command.concat(data);
+        
         let checksum = command.reduce((sum, byte) => sum + byte) & 0xff;
-  
         command.push(checksum);
+        
         this.io.serialWrite(this.#state.portId, command);
   
       }
