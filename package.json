@@ -1,6 +1,6 @@
 {
   "name": "huskylens",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Johnny-Five plug in for the HuskyLens AI Vision Sensor",
   "main": "index.js",
   "scripts": {
