@@ -3,11 +3,12 @@ A [Johnny-Five](http://johnny-five.io) plug-in for the HuskyLens AI Vision Senso
 
 AI on robots doesn't get any easier than this.
 
-*This repo is not affiliated with DFRobot. Their HuskyLens stuff is [here](https://github.com/HuskyLens).*
+![HuskyLens](https://raw.githubusercontent.com/dtex/huskylens/master/static/image1.jpg)
+*Image courtesy DFRobot*
 
 To purchase the HuskyLens, go to [dfrobot.com](https://www.dfrobot.com/index.php?route=page/huskylens)
 
-![HuskyLens](https://raw.githubusercontent.com/dtex/huskylens/master/static/image1.jpg)
+*This repo is not affiliated with DFRobot. Their HuskyLens stuff is [here](https://github.com/HuskyLens).*
 
 ## Example
 ````js
