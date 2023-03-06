@@ -1,5 +1,5 @@
 # HuskyLens
-A [Johnny-Five](http://johnny-five.io) plug-in for the HuskyLens AI Vision Sensor. Learn more about the Huskeylens at [DFRobot](https://www.dfrobot.com/index.php?route=page/HuskyLens).
+A [Johnny-Five](http://johnny-five.io) plug-in for the HuskyLens AI Vision Sensor. Learn more about the HuskyLens at [DFRobot](https://www.dfrobot.com/index.php?route=page/HuskyLens).
 
 AI on robots doesn't get any easier than this.
 
